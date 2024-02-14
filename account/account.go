@@ -2,6 +2,6 @@ package account
 
 type Account interface {
 	GetProfile() Profile
-	Type() Type
+	GetType() Type
 	StoreIdentifier() int64
 }
