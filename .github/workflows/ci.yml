@@ -1,0 +1,57 @@
+name: Code Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: golang:1.21-bookworm
+    services:
+      postgresql:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: coffee
+          POSTGRES_DB: coffee
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 30s
+          --health-timeout 20s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 30s
+          --health-timeout 20s
+          --health-retries 5
+      smtp:
+        image: marlonb/mailcrab:latest
+        ports:
+          - "1025:1025"
+          - "8025:1080"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: go build -buildvcs=false .
+
+      - name: Test
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
+        env:
+          DATABASE_URL: postgres://coffee:password@postgresql:5432/coffee?sslmode=disable
+          SMTP_URL: smtp://admin:admin@smtp:1025
+          REDIS_URL: redis://redis:6973
+
+      - uses: codecov/codecov-action@v4

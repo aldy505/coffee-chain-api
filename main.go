@@ -22,9 +22,9 @@ func App() *cli.App {
 			{
 				Name: "server",
 				Action: func(context *cli.Context) error {
-
+					return nil // TODO
 				},
-				Subcommands:            ,
+				Subcommands:            []*cli.Command{}, // TODO
 				Flags:                  nil,
 				SkipFlagParsing:        false,
 				HideHelp:               false,

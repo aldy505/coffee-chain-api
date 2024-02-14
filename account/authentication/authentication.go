@@ -7,9 +7,8 @@ import (
 	"coffee-chain-api/account"
 )
 
-
 type Authenticator interface {
-	Login(ctx context.Context, username string, plainPassword string) (token string, expiredAt time.Time err error)
+	Login(ctx context.Context, username string, plainPassword string) (token string, expiredAt time.Time, err error)
 	Logout(ctx context.Context, token string) error
 }
 
