@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aldy505/phc-crypto/format"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -129,7 +128,7 @@ func (p *pbdkf2Hasher) Hash(ctx context.Context, plainPassword string) (string, 
 		hash = pbkdf2.Key([]byte(plainPassword), salt, p.config.Rounds, p.config.KeyLen, md5.New)
 	}
 
-	hashString := format.Serialize(format.PHCConfig{
+	hashString := serialize(phcConfig{
 		ID: "pbkdf2" + hashFuncToName(p.config.HashFunc),
 		Params: map[string]interface{}{
 			"i": p.config.Rounds,
@@ -162,29 +161,29 @@ func (p *pbdkf2Hasher) Verify(ctx context.Context, plainPassword string, hashedP
 		return false, ErrEmptyToken
 	}
 
-	deserialize := format.Deserialize(hashedPassword)
+	deserialized := deserialize(hashedPassword)
 
-	if !strings.HasPrefix(deserialize.ID, "pbkdf2") {
+	if !strings.HasPrefix(deserialized.ID, "pbkdf2") {
 		return false, ErrUnexpectedHasherInstance
 	}
 
-	decodedHash, err := hex.DecodeString(deserialize.Hash)
+	decodedHash, err := hex.DecodeString(deserialized.Hash)
 	if err != nil {
 		return false, err
 	}
 	keyLen := int(len(decodedHash))
 
-	rounds, err := strconv.ParseInt(deserialize.Params["i"].(string), 10, 32)
+	rounds, err := strconv.ParseInt(deserialized.Params["i"].(string), 10, 32)
 	if err != nil {
 		return false, err
 	}
 
-	salt, err := hex.DecodeString(deserialize.Salt)
+	salt, err := hex.DecodeString(deserialized.Salt)
 	if err != nil {
 		return false, err
 	}
 
-	hashFunc := strings.Replace(deserialize.ID, "pbkdf2", "", 1)
+	hashFunc := strings.Replace(deserialized.ID, "pbkdf2", "", 1)
 
 	var verifyHash []byte
 

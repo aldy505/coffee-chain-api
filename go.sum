@@ -1,5 +1,3 @@
-github.com/aldy505/phc-crypto v1.2.0 h1:IbovWYUDUqqqI1wva9U2+sMJ4HABK5L32pScoJw2tc4=
-github.com/aldy505/phc-crypto v1.2.0/go.mod h1:tpy0uE4Cqb7I6LUO7BLihCdX56MxvZylsZ1LIzuRw0M=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/go-md2man/v2 v2.0.2 h1:p1EgwI/C7NhT0JmVkwCD2ZBK8j4aeHQX2pMHHBfMQ6w=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=

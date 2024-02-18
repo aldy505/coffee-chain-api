@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/aldy505/phc-crypto/format"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -52,7 +51,7 @@ func (b *bcryptHasher) Hash(ctx context.Context, plainPassword string) (string, 
 		return "", err
 	}
 
-	hashString := format.Serialize(format.PHCConfig{
+	hashString := serialize(phcConfig{
 		ID:      "bcrypt",
 		Version: 0,
 		Params: map[string]interface{}{

@@ -34,7 +34,7 @@ func NewJwt(accessPrivateKey []byte, accessPublicKey []byte, refreshPrivateKey [
 
 func (j *AuthJwt) Sign(userId int64) (accessToken string, refreshToken string, err error) {
 	accessRandId := make([]byte, 32)
-	rand.Read(accessRandId)
+	_, _ = rand.Read(accessRandId)
 
 	accessClaims := jwt.MapClaims{
 		"iss": j.issuer,
