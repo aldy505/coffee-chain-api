@@ -68,6 +68,104 @@ type repository struct {
 	passwordHasher password.Hasher
 }
 
+func (r *repository) UpdatePartial(ctx context.Context, account2 account.Account) error {
+	if account2.GetProfile().Email == "" {
+		return nil
+	}
+
+	conn, err := r.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquiring connection from pool: %w", err)
+	}
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Error().Err(err).Msg("closing connection back to pool")
+		}
+	}()
+
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelRepeatableRead,
+		ReadOnly:  false,
+	})
+	if err != nil {
+		return fmt.Errorf("creating transaction: %w", err)
+	}
+
+	var userAccount userAccountsTable
+	err = conn.QueryRowContext(
+		ctx,
+		`SELECT 
+				id, 
+				name, 
+				email, 
+				hashed_password, 
+				gender, 
+				type, 
+				email_validated, 
+				created_at, 
+				created_by, 
+				updated_at, 
+				updated_by
+			FROM 
+				user_accounts
+			WHERE
+				email = $1
+			LIMIT 1`,
+		account2.GetProfile().Email,
+	).Scan(
+		&userAccount.ID,
+		&userAccount.Name,
+		&userAccount.Email,
+		&userAccount.HashedPassword,
+		&userAccount.Gender,
+		&userAccount.Type,
+		&userAccount.EmailValidated,
+		&userAccount.CreatedAt,
+		&userAccount.CreatedBy,
+		&userAccount.UpdatedAt,
+		&userAccount.UpdatedBy,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+
+		return fmt.Errorf("getting user account by email: %w", err)
+	}
+
+	var updatedName string
+	if account2.GetProfile().Name != "" && userAccount.Name != account2.GetProfile().Name {
+		updatedName = account2.GetProfile().Name
+	}
+
+	var updatedGender account.Gender
+	if account2.GetProfile().Gender != account.GenderUnspecified {
+		updatedGender = account2.GetProfile().Gender
+	}
+
+	_, err = conn.ExecContext(
+		ctx,
+		`UPDATE
+			user_accounts
+		SET
+			name = $1,
+			gender = $2
+		WHERE
+			email = $3`,
+		updatedName,
+		updatedGender,
+		account2.GetProfile().Email,
+	)
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (r *repository) getUserAccountTableByEmail(ctx context.Context, email string) (*userAccountsTable, error) {
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
@@ -96,7 +194,7 @@ func (r *repository) getUserAccountTableByEmail(ctx context.Context, email strin
 				updated_at, 
 				updated_by
 			FROM 
-				coffee.public.user_accounts
+				user_accounts
 			WHERE
 				email = $1
 			LIMIT 1`,
@@ -152,6 +250,11 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (account.Acco
 }
 
 func (r *repository) Insert(ctx context.Context, rawAccount RawAccount) error {
+	hashedPassword, err := r.passwordHasher.Hash(ctx, rawAccount.PlainPassword)
+	if err != nil {
+		return fmt.Errorf("hashing password: %w", err)
+	}
+
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("acquiring connection from pool: %w", err)
@@ -169,6 +272,44 @@ func (r *repository) Insert(ctx context.Context, rawAccount RawAccount) error {
 	})
 	if err != nil {
 		return fmt.Errorf("creating transaction: %w", err)
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		`INSERT INTO 
+			user_accounts 
+			(name, 
+			 email, 
+			 hashed_password, 
+			 gender, 
+			 type, 
+			 email_validated, 
+			 created_at, 
+			 created_by, 
+			 updated_at, 
+			 updated_by
+			 )
+		VALUES 
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		rawAccount.Name,
+		rawAccount.Email,
+		hashedPassword,
+		account.GenderUnspecified,
+		rawAccount.Type,
+		false,
+		time.Now(),
+		"system",
+		time.Now(),
+		"system",
+	)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("rolling back transaction: %w (%s)", e, err)
+		}
+
+		// TODO: Handle if user already exists
+
+		return fmt.Errorf("executing insert query: %w", err)
 	}
 
 	err = tx.Commit()

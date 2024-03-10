@@ -13,6 +13,11 @@ type memorySessionStore struct {
 	m *sync.Map
 }
 
+func (m *memorySessionStore) Remove(ctx context.Context, token string) error {
+	m.m.Delete(token)
+	return nil
+}
+
 func (m *memorySessionStore) Set(ctx context.Context, session account.Account, token string, expiry time.Time) error {
 	m.m.Store(token, session)
 	go func(key string, duration time.Duration) {

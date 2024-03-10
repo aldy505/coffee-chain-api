@@ -21,4 +21,5 @@ var ErrEmptyToken = errors.New("empty token")
 type SessionStore interface {
 	Set(ctx context.Context, session account.Account, token string, expiry time.Time) error
 	Get(ctx context.Context, token string) (session account.Account, err error)
+	Remove(ctx context.Context, token string) error
 }

@@ -22,5 +22,5 @@ type AccountStore interface {
 	Insert(ctx context.Context, rawAccount RawAccount) error
 	DeleteByEmail(ctx context.Context, email string) error
 	ValidatePassword(ctx context.Context, account2 account.Account, plainPassword string) (bool, error)
-	// TODO: Update partial
+	UpdatePartial(ctx context.Context, account2 account.Account) error
 }

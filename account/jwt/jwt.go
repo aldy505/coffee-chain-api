@@ -53,7 +53,7 @@ func (j *AuthJwt) Sign(userId int64) (accessToken string, refreshToken string, e
 	}
 
 	refreshRandId := make([]byte, 32)
-	rand.Read(refreshRandId)
+	_, _ = rand.Read(refreshRandId)
 
 	refreshClaims := jwt.MapClaims{
 		"iss": j.issuer,
